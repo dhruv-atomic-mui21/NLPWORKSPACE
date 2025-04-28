@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced NLP Notepad</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #555;
+        }
+
+        .input-section, .output-section, .audio-section, .file-management-section, .module-selection {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .controls label, .controls select, .controls button {
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results pre {
+            white-space: pre-wrap; /* Preserve formatting and wrap lines */
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .save-section input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .load-section select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #fileContent pre {
+            white-space: pre-wrap;
+            background-color: #e0f7fa;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #b2ebf2;
+        }
+
+        .module-selection label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enhanced NLP Notepad</h1>
+
+        <div class="input-section">
+            <h2>Enter Text</h2>
+            <textarea id="inputText" placeholder="Type or paste your text here..."></textarea>
+            <div class="controls">
+                <label for="language">Language:</label>
+                <select id="language">
+                    <option value="en-US" selected>English (US)</option>
+                    <option value="fr-FR">French (France)</option>
+                </select>
+                <button id="processButton">Process Text</button>
+            </div>
+        </div>
+
+        <div class="module-selection">
+            <h2>Select Modules</h2>
+            <div id="moduleList">
+            </div>
+        </div>
+
+        <div class="audio-section">
+            <h2>Process Audio</h2>
+            <input type="file" id="audioFile" accept="audio/*">
+            <button id="uploadAudioButton" disabled>Upload Audio</button>
+            <div id="audioResults"></div>
+        </div>
+
+        <div class="output-section">
+            <h2>Processing Results</h2>
+            <div id="results"></div>
+        </div>
+
+        <div class="file-management-section">
+            <h2>Save & Load Files</h2>
+            <div class="save-section">
+                <input type="text" id="saveFilename" placeholder="Enter filename to save">
+                <button id="saveButton" disabled>Save</button>
+                <div id="saveMessage"></div>
+            </div>
+            <div class="load-section">
+                <select id="fileList">
+                    <option value="" disabled selected>Select a file to load</option>
+                </select>
+                <button id="loadButton" disabled>Load</button>
+                <div id="loadMessage"></div>
+            </div>
+            <div id="fileContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputText = document.getElementById('inputText');
+            const languageSelect = document.getElementById('language');
+            const processButton = document.getElementById('processButton');
+            const resultsDiv = document.getElementById('results');
+            const audioFile = document.getElementById('audioFile');
+            const uploadAudioButton = document.getElementById('uploadAudioButton');
+            const audioResultsDiv = document.getElementById('audioResults');
+            const saveFilenameInput = document.getElementById('saveFilename');
+            const saveButton = document.getElementById('saveButton');
+            const saveMessageDiv = document.getElementById('saveMessage');
+            const fileListSelect = document.getElementById('fileList');
+            const loadButton = document.getElementById('loadButton');
+            const loadMessageDiv = document.getElementById('loadMessage');
+            const fileContentDiv = document.getElementById('fileContent');
+            const moduleListDiv = document.getElementById('moduleList');
+
+            let availableModules = [];
+
+            // Function to fetch and display available modules
+            const fetchModules = async () => {
+                try {
+                    const response = await fetch('/api/modules');
+                    const data = await response.json();
+                    if (data.modules) {
+                        availableModules = data.modules;
+                        renderModuleCheckboxes(availableModules);
+                    } else if (data.error) {
+                        console.error("Error fetching modules:", data.error);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch modules:", error);
+                }
+            };
+
+            // Function to render module selection checkboxes
+            const renderModuleCheckboxes = (modules) => {
+                moduleListDiv.innerHTML = '';
+                modules.forEach(module => {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = module;
+                    checkbox.value = module;
+                    checkbox.checked = true; // Default to all enabled
+
+                    const label = document.createElement('label');
+                    label.htmlFor = module;
+                    label.textContent = module;
+
+                    const div = document.createElement('div');
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    moduleListDiv.appendChild(div);
+                });
+            };
+
+            // Event listener for processing text
+processButton.addEventListener('click', async () => {
+                const text = inputText.value;
+                const language = languageSelect.value;
+                const selectedModules = Array.from(moduleListDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                    .map(checkbox => checkbox.value);
+
+                if (text) {
+                    resultsDiv.textContent = 'Processing...';
+                    try {
+                        const response = await fetch('/api/process', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ text, language, modules: selectedModules }),
+                        });
+                        const data = await response.json();
+
+                        // Clear previous results
+                        resultsDiv.innerHTML = '';
+
+                        // Check if data contains error
+                        if (data.error) {
+                            resultsDiv.textContent = `Error: ${data.error}`;
+                            return;
+                        }
+
+                        // Display results in a polished way
+                        for (const [moduleName, result] of Object.entries(data)) {
+                            const moduleDiv = document.createElement('div');
+                            moduleDiv.style.marginBottom = '15px';
+
+                            const title = document.createElement('h3');
+                            title.textContent = moduleName;
+                            moduleDiv.appendChild(title);
+
+                            if (typeof result === 'object') {
+                                // If result is an object, display key-value pairs
+                                const ul = document.createElement('ul');
+                                for (const [key, value] of Object.entries(result)) {
+                                    const li = document.createElement('li');
+                                    li.textContent = `${key}: ${value}`;
+                                    ul.appendChild(li);
+                                }
+                                moduleDiv.appendChild(ul);
+                            } else {
+                                // Otherwise, display as text
+                                const p = document.createElement('p');
+                                p.textContent = result;
+                                moduleDiv.appendChild(p);
+                            }
+
+                            resultsDiv.appendChild(moduleDiv);
+                        }
+                    } catch (error) {
+                        resultsDiv.textContent = `Error: ${error.message}`;
+                    }
+                } else {
+                    resultsDiv.textContent = 'Please enter some text to process.';
+                }
+            });
+
+            // Enable upload button when a file is selected
+            audioFile.addEventListener('change', () => {
+                uploadAudioButton.disabled = !audioFile.files.length;
+            });
+
+            // Event listener for uploading audio
+            uploadAudioButton.addEventListener('click', async () => {
+                if (audioFile.files.length > 0) {
+                    audioResultsDiv.textContent = 'Uploading and processing audio...';
+                    const formData = new FormData();
+                    formData.append('file', audioFile.files[0]);
+                    formData.append('language', languageSelect.value); // Use the selected language
+
+                    try {
+                        const response = await fetch('/api/upload_audio', {
+                            method: 'POST',
+                            body: formData,
+                        });
+                        const data = await response.json();
+                        audioResultsDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    } catch (error) {
+                        audioResultsDiv.textContent = `Error processing audio: ${error.message}`;
+                    }
+                }
+            });
+
+            // Enable save button when filename is entered
+            saveFilenameInput.addEventListener('input', () => {
+                saveButton.disabled = !saveFilenameInput.value.trim();
+            });
+
+            // Event listener for saving text
+            saveButton.addEventListener('click', async () => {
+                const textToSave = inputText.value;
+                const filename = saveFilenameInput.value.trim();
+
+                if (textToSave && filename) {
+                    saveMessageDiv.textContent = 'Saving...';
+                    try {
+                        const response = await fetch('/api/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ text: textToSave, filename: filename }),
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            saveMessageDiv.textContent = `Saved to ${data.path}`;
+                            fetchFileList(); // Refresh the file list after saving
+                        } else {
+                            saveMessageDiv.textContent = `Error saving: ${data.error}`;
+                        }
+                    } catch (error) {
+                        saveMessageDiv.textContent = `Failed to save: ${error.message}`;
+                    }
+                } else {
+                    saveMessageDiv.textContent = 'Please enter text and a filename to save.';
+                }
+            });
+
+            // Function to fetch and populate the list of saved files
+            const fetchFileList = async () => {
+                try {
+                    const response = await fetch('/api/load');
+                    const data = await response.json();
+                    fileListSelect.innerHTML = '<option value="" disabled selected>Select a file to load</option>';
+                    if (data.files && data.files.length > 0) {
+                        data.files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file;
+                            option.textContent = file;
+                            fileListSelect.appendChild(option);
+                        });
+                        loadButton.disabled = false;
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "No files saved yet";
+                        fileListSelect.appendChild(option);
+                        loadButton.disabled = true;
+                    }
+                } catch (error) {
+                    console.error("Error fetching file list:", error);
+                }
+            };
+
+            // Event listener for loading a file
+            loadButton.addEventListener('click', async () => {
+                const selectedFile = fileListSelect.value;
+                if (selectedFile) {
+                    loadMessageDiv.textContent = 'Loading...';
+                    try {
+                        const response = await fetch(`/api/load/${selectedFile}`);
+                        const data = await response.json();
+                        if (data.text) {
+                            inputText.value = data.text;
+                            fileContentDiv.innerHTML = `<pre>--- Loaded Content from ${selectedFile} ---\n${data.text}</pre>`;
+                            loadMessageDiv.textContent = '';
+                        } else {
+                            loadMessageDiv.textContent = `Error loading: ${data.error}`;
+                            fileContentDiv.textContent = '';
+                        }
+                    } catch (error) {
+                        loadMessageDiv.textContent = `Failed to load: ${error.message}`;
+                        fileContentDiv.textContent = '';
+                    }
+                } else {
+                    loadMessageDiv.textContent = 'Please select a file to load.';
+                }
+            });
+
+            // Initialize by fetching the list of modules and saved files
+            fetchModules();
+            fetchFileList();
+        });
+    </script>
+</body>
+</html>
