@@ -1,27 +1,35 @@
-"""
-Web server implementation for the NLP Notepad using Flask.
-"""
 import os
 import logging
 import tempfile
 import json
 from typing import Dict, Any
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from modules.core import Pipeline
 
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, 
-            static_folder="static",
-            template_folder="template")
+# Serve React build files from frontend/build
+frontend_build_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
+
+app = Flask(__name__,
+            static_folder=os.path.join(frontend_build_dir, 'static'),
+            static_url_path='/static')
+
+# Enable CORS for development with React frontend
+CORS(app)
 
 
-@app.route('/')
-def index():
-    """Serve the main application page."""
-    return render_template('index.html')
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """Serve React app for all routes."""
+    if path != "" and os.path.exists(os.path.join(frontend_build_dir, path)):
+        return send_from_directory(frontend_build_dir, path)
+    else:
+        return send_from_directory(frontend_build_dir, 'index.html')
 
 @app.route('/api/process', methods=['POST'])
 def process_text():

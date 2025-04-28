@@ -45,7 +45,6 @@ def create_pipeline(config: Dict[str, Any]) -> Pipeline:
     # Get enabled modules from config or default to all known module names
     enabled_modules = config.get("enabled_modules", [
         "grammar",
-        "summarize",
         "sentiment",
         "voice",
         "completion"
@@ -54,7 +53,6 @@ def create_pipeline(config: Dict[str, Any]) -> Pipeline:
     # Map module names to their class names and module paths
     module_info = {
         "grammar": ("modules.grammar", "GrammarChecker"),
-        "summarize": ("modules.summarize", "Summarizer"),
         "sentiment": ("modules.sentiment", "SentimentAnalyzer"),
         "voice": ("modules.voice", "VoiceToText"),
         "completion": ("modules.completion", "TextCompletion")
