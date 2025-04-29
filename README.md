@@ -85,10 +85,6 @@ This project is an Enhanced NLP Notepad application that provides advanced natur
   - Transformers and Torch (for transformer-based sentiment analysis)
   - Other NLP libraries as needed
 
-## License
-
-This project is licensed under the MIT License.
-
 ## Acknowledgments
 
 - VADER Sentiment Analysis: https://github.com/cjhutto/vaderSentiment
